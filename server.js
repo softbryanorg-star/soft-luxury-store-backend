@@ -11,7 +11,15 @@ import adminRoutes from './routes/admin.js';
 
 dotenv.config();
 const server = express();
-server.use(cors());
+// configure CORS to allow frontend origin and credentials
+const FRONTEND_ORIGIN = process.env.FRONTEND_ORIGIN || 'http://localhost:5173';
+server.use(cors({ origin: (origin, callback) => {
+  if (!origin) return callback(null, true);
+  if (origin === FRONTEND_ORIGIN) return callback(null, true);
+  // allow localhost during development
+  if (origin.startsWith('http://localhost')) return callback(null, true);
+  return callback(new Error('Not allowed by CORS'));
+}, credentials: true }));
 
 // connect db
 connectDB().catch(err => { console.error(err); process.exit(1); });
@@ -44,25 +52,4 @@ server.get('/', (req, res) => res.json({ ok: true }));
 
 const PORT = process.env.PORT || 5000;
 server.listen(PORT, () => console.log(`Server running on ${PORT}`));
-
-//✅ 1. Enable CORS before everything else
- const allowedOrigins = [
-  "http://localhost:5173",
-   "https://soft-luxury-store.vercel.app/",
-];
-
-server.use(
-  cors({
-    origin: function (origin, callback) {
-      if (!origin) return callback(null, true); // mobile apps, Postman
-      if (allowedOrigins.includes(origin)) {
-        return callback(null, true);
-      } else {
-        return callback(new Error("Not allowed by CORS"));
-      }
-    },
-    credentials: true,
-    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization"],
-  })
-); 
+// CORS configured above (do not use wildcard when credentials are included)
