@@ -74,3 +74,27 @@ export const getOrderById = async (req, res) => {
     res.status(500).json({ error: "Server error" });
   }
 };
+
+export const trackOrder = async (req, res) => {
+  try {
+    const { orderId, email } = req.body;
+    if (!orderId || !email) return res.status(400).json({ error: 'orderId and email required' });
+    const order = await Order.findById(orderId).populate('user', 'email firstName');
+    if (!order) return res.status(404).json({ error: 'Not found' });
+
+    // If order belongs to a registered user, match email
+    if (order.user) {
+      if (order.user.email.toLowerCase() !== String(email).toLowerCase()) return res.status(403).json({ error: 'Forbidden' });
+      return res.json(order);
+    }
+
+    // Guest order: check shippingAddress.email
+    const shipEmail = order.shippingAddress?.email;
+    if (shipEmail && shipEmail.toLowerCase() === String(email).toLowerCase()) return res.json(order);
+
+    return res.status(403).json({ error: 'Forbidden' });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Server error' });
+  }
+};
