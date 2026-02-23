@@ -10,7 +10,10 @@ const createRefreshTokenString = () => crypto.randomBytes(64).toString('hex');
 
 export const register = async (req, res) => {
   const errors = validationResult(req);
-  if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
+  if (!errors.isEmpty()) {
+    const msg = errors.array().map(e => e.msg).join(', ');
+    return res.status(400).json({ error: msg });
+  }
   const { firstName, lastName, email, password, phoneNumber, address } = req.body;
   try {
     const existing = await User.findOne({ email });
@@ -36,7 +39,10 @@ export const register = async (req, res) => {
 
 export const login = async (req, res) => {
   const errors = validationResult(req);
-  if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
+  if (!errors.isEmpty()) {
+    const msg = errors.array().map(e => e.msg).join(', ');
+    return res.status(400).json({ error: msg });
+  }
   const { email, password } = req.body;
   try {
     const user = await User.findOne({ email });

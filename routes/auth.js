@@ -15,14 +15,14 @@ const authLimiter = rateLimit({
 });
 
 router.post('/register', authLimiter, [
-	body('email').isEmail(),
-	body('password').isLength({ min: 6 })
+	body('email').isEmail().withMessage('Please provide a valid email address'),
+	body('password').isLength({ min: 6 }).withMessage('Password must be at least 6 characters')
 ], register);
 
 
 router.post('/login', authLimiter, [
-	body('email').isEmail(),
-	body('password').exists()
+	body('email').isEmail().withMessage('Please provide a valid email address'),
+	body('password').exists().withMessage('Password is required')
 ], login);
 
 // refresh token endpoint (reads httpOnly cookie)
