@@ -11,29 +11,23 @@ import adminRoutes from './routes/admin.js';
 
 dotenv.config();
 const server = express();
-// configure CORS to allow frontend origin and credentials
-// FRONTEND_ORIGIN: set this in your backend environment to your deployed frontend origin (e.g. https://soft-luxury-store.vercel.app)
-// If not set, we fall back to allowing all origins (to ensure the deployed frontend can reach the API).
-// For stricter security set FRONTEND_ORIGIN to your exact frontend origin.
+// CORS whitelist middleware — allow deployed frontend and local dev
 const FRONTEND_ORIGIN = process.env.FRONTEND_ORIGIN || '';
+const allowedOrigins = new Set([
+  'https://soft-luxury-store.vercel.app',
+  'http://localhost:5173',
+]);
+if (FRONTEND_ORIGIN) allowedOrigins.add(FRONTEND_ORIGIN);
 
-// Simpler CORS policy: allow the configured origin or allow all when not configured.
 server.use((req, res, next) => {
   const origin = req.headers.origin;
   if (!origin) return next();
-  // allow localhost always
-  if (origin.startsWith('http://localhost')) {
+  if (allowedOrigins.has(origin)) {
     res.setHeader('Access-Control-Allow-Origin', origin);
-  } else if (FRONTEND_ORIGIN) {
-    res.setHeader('Access-Control-Allow-Origin', FRONTEND_ORIGIN);
-  } else {
-    // no FRONTEND_ORIGIN configured -> allow the requesting origin (less strict but fixes deploy issues)
-    res.setHeader('Access-Control-Allow-Origin', origin);
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
+    res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PUT,PATCH,DELETE,OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type,Authorization,Accept,X-Requested-With');
   }
-  res.setHeader('Access-Control-Allow-Credentials', 'true');
-  res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PUT,PATCH,DELETE,OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-  // handle preflight
   if (req.method === 'OPTIONS') return res.sendStatus(204);
   next();
 });
