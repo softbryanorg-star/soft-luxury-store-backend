@@ -13,17 +13,30 @@ dotenv.config();
 const server = express();
 // configure CORS to allow frontend origin and credentials
 // FRONTEND_ORIGIN: set this in your backend environment to your deployed frontend origin (e.g. https://soft-luxury-store.vercel.app)
-// If not set, the server will accept requests from any origin (so the deployed frontend can still reach it),
-// but it's strongly recommended to set this to a specific origin in production.
+// If not set, we fall back to allowing all origins (to ensure the deployed frontend can reach the API).
+// For stricter security set FRONTEND_ORIGIN to your exact frontend origin.
 const FRONTEND_ORIGIN = process.env.FRONTEND_ORIGIN || '';
-server.use(cors({ origin: (origin, callback) => {
-  if (!origin) return callback(null, true); // allow tools like Postman
-  if (!FRONTEND_ORIGIN) return callback(null, true); // no explicit origin configured — allow whatever origin requested
-  if (origin === FRONTEND_ORIGIN) return callback(null, true);
-  // allow localhost during development
-  if (origin.startsWith('http://localhost')) return callback(null, true);
-  return callback(new Error('Not allowed by CORS'));
-}, credentials: true }));
+
+// Simpler CORS policy: allow the configured origin or allow all when not configured.
+server.use((req, res, next) => {
+  const origin = req.headers.origin;
+  if (!origin) return next();
+  // allow localhost always
+  if (origin.startsWith('http://localhost')) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+  } else if (FRONTEND_ORIGIN) {
+    res.setHeader('Access-Control-Allow-Origin', FRONTEND_ORIGIN);
+  } else {
+    // no FRONTEND_ORIGIN configured -> allow the requesting origin (less strict but fixes deploy issues)
+    res.setHeader('Access-Control-Allow-Origin', origin);
+  }
+  res.setHeader('Access-Control-Allow-Credentials', 'true');
+  res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PUT,PATCH,DELETE,OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  // handle preflight
+  if (req.method === 'OPTIONS') return res.sendStatus(204);
+  next();
+});
 
 // connect db
 connectDB().catch(err => { console.error(err); process.exit(1); });
