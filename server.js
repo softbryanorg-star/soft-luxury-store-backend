@@ -12,9 +12,13 @@ import adminRoutes from './routes/admin.js';
 dotenv.config();
 const server = express();
 // configure CORS to allow frontend origin and credentials
-const FRONTEND_ORIGIN = process.env.FRONTEND_ORIGIN || 'http://localhost:5173';
+// FRONTEND_ORIGIN: set this in your backend environment to your deployed frontend origin (e.g. https://soft-luxury-store.vercel.app)
+// If not set, the server will accept requests from any origin (so the deployed frontend can still reach it),
+// but it's strongly recommended to set this to a specific origin in production.
+const FRONTEND_ORIGIN = process.env.FRONTEND_ORIGIN || '';
 server.use(cors({ origin: (origin, callback) => {
-  if (!origin) return callback(null, true);
+  if (!origin) return callback(null, true); // allow tools like Postman
+  if (!FRONTEND_ORIGIN) return callback(null, true); // no explicit origin configured — allow whatever origin requested
   if (origin === FRONTEND_ORIGIN) return callback(null, true);
   // allow localhost during development
   if (origin.startsWith('http://localhost')) return callback(null, true);
